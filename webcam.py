@@ -1,5 +1,6 @@
 import cv2
 from threading import Thread
+import time
    
 class Webcam:
    
@@ -10,6 +11,9 @@ class Webcam:
     # create thread for capturing images
     def start(self):
         Thread(target=self._update_frame, args=()).start()
+        time.sleep(120)
+        time.terminate()
+        time.join()
    
     def _update_frame(self):
         while(True):
