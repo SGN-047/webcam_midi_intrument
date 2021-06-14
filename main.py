@@ -1,51 +1,55 @@
-from webcam import Webcam
-from detection import Detection
-import winsound
+from vidcapture import Webcam
 import time
+from signalprocessing import Detection
 import rtmidi
 
-idiout = rtmidi.MidiOut()
-# Retrieve all the open ports
-available_ports = midiout.get_ports()
-print(available_ports)
+#Initializing virtual midi
+midiout = rtmidi.MidiOut()
 
-# Attempt to open the port
-if available_ports:
+# Retrieve all the open ports
+av_ports = midiout.get_ports()
+print(av_ports)
+
+#opening the port
+if av_ports:
     midiout.open_port(1)
 else:
     midiout.open_virtual_port("My virtual output") 
+
 # musical notes (C, D, E, F, G, A, B)
-NOTES = [262, 294, 330, 350, 393, 441, 494]
-NOTESmidion = [[0x90, 61, 112],[0x90, 62, 112],[0x90, 63, 112],[0x90, 64, 112],[0x90, 65, 112],[0x90, 66, 112],[0x90, 67, 112]] 
-NOTESmidioff = [[0x80, 61, 0],[0x80, 62, 0],[0x80, 63, 0],[0x80, 64, 0],[0x80, 65, 0],[0x80, 66, 0],[0x80, 67, 0]]
+#array of arrays to start midi signals with tone and velocity
+NOTESmidion = [[0x90, 60, 112],[0x90, 62, 112],[0x90, 64, 112],[0x90, 65, 112],[0x90, 67, 112],[0x90, 69, 112],[0x90, 71, 112]] 
+
+#array of arrays to stop midi signals with tone and velocity
+NOTESmidioff = [[0x80, 60, 0],[0x80, 62, 0],[0x80, 64, 0],[0x80, 65, 0],[0x80, 67, 0],[0x80, 69, 0],[0x80, 71, 0]]
+
 # initialise webcam and start thread
-webcam = Webcam()
-webcam.start()
+cam = Webcam()
+cam.capture_start()
  
-# initialise detection with first webcam frame
-image = webcam.get_current_frame()
-detection = Detection(image) 
+# initialise detection with first webcam frag
+img = cam.refresh_image()
+detection = Detection(img) 
  
-# initialise switch
-switch = True
+# variable for flow control
+flow_var = True
  
 while True:
  
     # get current frame from webcam
-    image = webcam.get_current_frame()
+    img = cam.refresh_image()
      
     # use motion detection to get active cell
-    cell = detection.get_active_cell(image)
+    cell = detection.active_div(img)
     if cell == None: continue
  
-    # if switch on, play note
-    if switch:
-        #winsound.Beep(NOTES[cell], 1000)
-        #alt code
+    
+    if flow_var:
+        #if flow control variable on, send corresponding midi input
         midiout.send_message(NOTESmidion[cell])
         time.sleep(0.5)
         midiout.send_message(NOTESmidioff[cell])
      
-    # alternate switch    
-    switch = not switch
-    del midiout
+    #Exitting    
+    flow_var = not flow_var
+    #del midiout
